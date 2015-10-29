@@ -4,15 +4,15 @@ from xml.dom import minidom
 ELEMENT_NODE = xml.dom.Node.ELEMENT_NODE
 TEXT_NODE = xml.dom.Node.TEXT_NODE
 
-class MyNode:
+class Node:
     '''
-    ' xml 文件节点
+    ' 节点对象
     '''
     def __init__(self, name):
-        self.name = name
-        self.value = None
-        self._attr={}
-        self.childs = []
+        self.name = name    #节点名称
+        self.value = None   #节点值
+        self._attr={}       #节点属性
+        self.childs = []    #节点子节点
         
     def setChilds(self, node):
         self.childs.append(node)
@@ -33,32 +33,28 @@ class MyNode:
     def getValue(self):
         return self.value
     
-    def display(self):
-        print "node name %s" % self.name
-        print "node value %s " % self.value
-        print "node attr %s" % unicode(self._attr)
-        
-    def displayAll(self):
-        self.display()
-        for child in self.childs:
-            child.display()
-            
-def getNodesByName(node, name):
+
+def getNodesByName(root, name, nodes=[]):    
     '''
     ' 根据节点名称获取节点对象,
-    '''
-    nodes=[]
-    if node.name == name:
-        nodes.append(node)
+    ' root:一个节点对象
+    ' name:查找的节点名称
+    '''    
+    if root.name == name:
+        nodes.append(root)
     else:
-        while len(node.childs) > 0:
-            for n in node.childs:
-                nodes.append(n)
-            
+        for item in root.childs:
+            if item.name == name:
+                nodes.append(item)
+            else:
+                getNodesByName(item, name, nodes)
     return nodes
-        
+            
         
 class PraseXML:
+    """
+    " 解析Xml 文件
+    """
     def __init__(self, file):
         self.root = minidom.parse(file).documentElement
         
@@ -70,18 +66,30 @@ class PraseXML:
         for elem in elements:
             if elem.nodeType is TEXT_NODE:
                 continue
-            node = MyNode(elem.nodeName)
+            node = Node(elem.nodeName)    #实例化节点对象
             root.setChilds(node)
             for attr in elem._attrs:
                 node.setAttr(attr, elem._attrs[attr].value)
             node.setValue(elem.firstChild.nodeValue)
             if elem.nodeType is ELEMENT_NODE:
                 self.parseElement(node, elem)
+            else:
+                pass
+                
+class XmlToNode:
+    '''
+    ' 组合 XML 解析类与节点类
+    '''
+    def __init__(self, file):
+        xmlObj = PraseXML(file)
+        self.rootNode = Node(xmlObj.root.nodeName)
+        xmlObj.parseElement(self.rootNode)
+    
+    def nodeObj(self):
+        return self.rootNode
+        
         
 if __name__ == '__main__':
-    obj = PraseXML('/home/yanheng/test/data.xml')
-    rootnode = MyNode(obj.root.nodeName)
-    obj.parseElement(rootnode)
-    #rootnode.displayAll()
-#     xx = getNodesByName(rootnode, 'list')
-    print rootnode.childs[1].getAttr("id")
+    node = XmlToNode('/home/yanheng/test/data.xml').nodeObj()
+    s = getNodesByName(node, 'number')
+    print s[1].value
